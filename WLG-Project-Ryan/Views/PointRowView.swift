@@ -21,11 +21,20 @@ struct PointRowView: View {
                 Text(pointViewModel.kindString)
                 Text(pointViewModel.latString)
                 Text(pointViewModel.lonString)
-                if loadedIcon {
-                    Image(uiImage: image)
-                        .resizable()
-                        .frame(width: 50, height: 50)
+                HStack {
+                    if loadedIcon {
+                        Image(uiImage: image)
+                            .resizable()
+                            .frame(width: 50, height: 50)
+                    }
+                    Spacer()
+                    NavigationLink(destination: DetailsView(url: URL(string: pointViewModel.siteUrl)!)) {
+                        Text("Show Details")
+                    }
+                    .navigationTitle("Search Results")
                 }
+                .padding(20)
+                
                 Divider()
             }
             .onAppear {

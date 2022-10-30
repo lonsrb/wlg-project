@@ -10,6 +10,10 @@
 		8A029DAB290DA00800A46314 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A029DAA290DA00800A46314 /* ImageCache.swift */; };
 		8A029DAD290DA06A00A46314 /* NetworkingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A029DAC290DA06A00A46314 /* NetworkingService.swift */; };
 		8ABE50EB290E13C900757F17 /* SwiftDraw in Frameworks */ = {isa = PBXBuildFile; productRef = 8ABE50EA290E13C900757F17 /* SwiftDraw */; };
+		8ABE50ED290E1B8B00757F17 /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ABE50EC290E1B8B00757F17 /* MapView.swift */; };
+		8ABE50EF290E1BDF00757F17 /* ListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ABE50EE290E1BDF00757F17 /* ListView.swift */; };
+		8ABE50F1290E1E8300757F17 /* DetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ABE50F0290E1E8300757F17 /* DetailsView.swift */; };
+		8ABE50F3290E1EFC00757F17 /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ABE50F2290E1EFC00757F17 /* WebView.swift */; };
 		8AC63785290CB82500A6B2B9 /* WLG_Project_RyanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AC63784290CB82500A6B2B9 /* WLG_Project_RyanApp.swift */; };
 		8AC63789290CB82600A6B2B9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8AC63788290CB82600A6B2B9 /* Assets.xcassets */; };
 		8AC6378D290CB82600A6B2B9 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8AC6378C290CB82600A6B2B9 /* Preview Assets.xcassets */; };
@@ -46,6 +50,10 @@
 /* Begin PBXFileReference section */
 		8A029DAA290DA00800A46314 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
 		8A029DAC290DA06A00A46314 /* NetworkingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkingService.swift; sourceTree = "<group>"; };
+		8ABE50EC290E1B8B00757F17 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
+		8ABE50EE290E1BDF00757F17 /* ListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListView.swift; sourceTree = "<group>"; };
+		8ABE50F0290E1E8300757F17 /* DetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailsView.swift; sourceTree = "<group>"; };
+		8ABE50F2290E1EFC00757F17 /* WebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebView.swift; sourceTree = "<group>"; };
 		8AC63781290CB82500A6B2B9 /* WLG-Project-Ryan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "WLG-Project-Ryan.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8AC63784290CB82500A6B2B9 /* WLG_Project_RyanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WLG_Project_RyanApp.swift; sourceTree = "<group>"; };
 		8AC63788290CB82600A6B2B9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -185,7 +193,11 @@
 			isa = PBXGroup;
 			children = (
 				8AC637B3290CBBDF00A6B2B9 /* SearchView.swift */,
+				8ABE50EC290E1B8B00757F17 /* MapView.swift */,
+				8ABE50EE290E1BDF00757F17 /* ListView.swift */,
 				8AC637C1290CC5F600A6B2B9 /* PointRowView.swift */,
+				8ABE50F0290E1E8300757F17 /* DetailsView.swift */,
+				8ABE50F2290E1EFC00757F17 /* WebView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -327,8 +339,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				8A029DAB290DA00800A46314 /* ImageCache.swift in Sources */,
+				8ABE50F1290E1E8300757F17 /* DetailsView.swift in Sources */,
+				8ABE50EF290E1BDF00757F17 /* ListView.swift in Sources */,
+				8ABE50ED290E1B8B00757F17 /* MapView.swift in Sources */,
 				8A029DAD290DA06A00A46314 /* NetworkingService.swift in Sources */,
 				8AC637BC290CBF2D00A6B2B9 /* PointType.swift in Sources */,
+				8ABE50F3290E1EFC00757F17 /* WebView.swift in Sources */,
 				8AC637B8290CBD9D00A6B2B9 /* PointsService.swift in Sources */,
 				8AC637C2290CC5F600A6B2B9 /* PointRowView.swift in Sources */,
 				8AC637BA290CBE8900A6B2B9 /* Point.swift in Sources */,

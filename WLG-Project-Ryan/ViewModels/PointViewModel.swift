@@ -15,6 +15,7 @@ class PointViewModel : ObservableObject, Identifiable {
     var lonString : String
     var kindString: String
     var iconUrl: String
+    var siteUrl: String
     
     @Published var thumbnailImage: UIImage = UIImage(systemName: "ellipsis",
                                                      withConfiguration: UIImage.SymbolConfiguration(pointSize: 55, weight: .black))!
@@ -32,6 +33,7 @@ class PointViewModel : ObservableObject, Identifiable {
         lonString = "lon: " + String(point.location.lon)
         kindString = point.kind.rawValue
         iconUrl = point.iconUrl
+        siteUrl = point.webUrl
         //        populateCell()
     }
     

@@ -11,6 +11,8 @@ import CoreLocation
 
 class PointsViewModel: ObservableObject  {
     @Published var points: [PointViewModel] = []
+    @Published var searchCoordinate: CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: 39.28783449044417, longitude: -76.39857580839772)
+    
     var pointsService : PointsServiceProtocol!
     
     private var cancellables = Set<AnyCancellable>()
@@ -31,7 +33,7 @@ class PointsViewModel: ObservableObject  {
     
     func fetch() {
         Task {
-            await pointsService.loadPoints(coordinate: CLLocationCoordinate2D(latitude: 39.28783449044417, longitude: -76.39857580839772))
+            await pointsService.loadPoints(coordinate: searchCoordinate)
         }
     }
 }

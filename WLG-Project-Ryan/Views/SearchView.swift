@@ -9,32 +9,35 @@ import SwiftUI
 
 struct SearchView: View {
     @StateObject private var viewModel = PointsViewModel(pointsService: ApplicationConfiguration.shared.pointService)
+    @State private var resultsView: ResultsViewSection = .list
+  
+    enum ResultsViewSection : String, CaseIterable {
+        case list = "List"
+        case map = "Map"
+    }
     
     var body: some View {
         VStack {
-            Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-            Button {
-                viewModel.fetch()
-            } label: {
-                Text("Trigger search")
-            }
-            NavigationView {
-                ScrollView {
-                    ScrollViewReader { scrollViewReader in
-                        LazyVStack {
-                            ForEach(viewModel.points, id:\.id) { pointViewModel in
-                                PointRowView(pointViewModel: pointViewModel)
-                                    .listRowInsets(EdgeInsets())
-                                    .id(pointViewModel.id)
-//                                    .frame(height: 60)
-                            }
-                        }
-                        .onAppear{
-                            viewModel.fetch()
-                        }
-                    }
+            Text("Hello, World!")
+            
+            Picker("Search results", selection: $resultsView) {
+                ForEach(ResultsViewSection.allCases, id: \.self) { option in
+                    Text(option.rawValue)
                 }
             }
+            .pickerStyle(.segmented)
+            
+            NavigationView {
+                if resultsView == .map {
+                    MapView(pointViewModel: viewModel)
+                }
+                else {
+                    ListView(pointViewModel: viewModel)
+                }
+            }
+        }
+        .onAppear{
+            viewModel.fetch()
         }
     }
 }
