@@ -56,6 +56,8 @@ class PointsViewModel: ObservableObject  {
         if distance > 5000 {//5000 meters, total arbitraty at this point. should eventually be with regard to map window scale
             searchForPoints(coordinate: newRegion.center, queryString: pointsService.cachedSearchContext.query, selectedFilters: pointsService.cachedSearchContext.selectedFilters)
         }
+        
+       
 //        pointsService.cachedSearchContext.region.center = newRegion.center
         
 //        bounds | optional
@@ -70,6 +72,10 @@ class PointsViewModel: ObservableObject  {
 //        lon
 //        number greater than or equal to -180 and less than or equal to 180
 
+    }
+    
+    func centerMapAtPoint(pointViewModel: PointViewModel) {
+        pointsService.centerMapContextAroundPoint(coord: pointViewModel.coord)
     }
     
     @MainActor

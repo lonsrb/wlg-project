@@ -17,6 +17,7 @@ protocol PointsServiceProtocol {
     var cachedSearchContext: SearchContext { get }
     var searchContextSubject: PassthroughSubject<SearchContext, Never> { get }
     
+    func centerMapContextAroundPoint(coord : CLLocationCoordinate2D)
     func loadPoints(searchContext: SearchContext) async
     func loadImage(thumbnailURL : String) async throws -> UIImage?
 }
@@ -27,17 +28,21 @@ struct PointsResponse: Codable {
 
 class PointsService: PointsServiceProtocol {
     var pointsSubject = PassthroughSubject<[Point], Never>()
-    var searchContextSubject = PassthroughSubject<SearchContext, Never>() {
+    var searchContextSubject = PassthroughSubject<SearchContext, Never>()
+    var cachedSearchContext: SearchContext = SearchContext(query: "", selectedFilters: [], region: MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 39.28783449044417, longitude: -76.39857580839772),
+        latitudinalMeters: 750,
+        longitudinalMeters: 750
+    )){
         didSet {
             print("seting new search context")
             searchContextSubject.send(cachedSearchContext)
         }
     }
-    var cachedSearchContext: SearchContext = SearchContext(query: "", selectedFilters: [], region: MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 39.28783449044417, longitude: -76.39857580839772),
-        latitudinalMeters: 750,
-        longitudinalMeters: 750
-    ))
+    
+    func centerMapContextAroundPoint(coord : CLLocationCoordinate2D) {
+        cachedSearchContext = SearchContext(query: cachedSearchContext.query, selectedFilters: cachedSearchContext.selectedFilters, region: MKCoordinateRegion(center: coord, span: cachedSearchContext.region.span))
+    }
     
     private var currentPoints = [Point]()
     private var networkingService : NetworkingServiceProtocol!

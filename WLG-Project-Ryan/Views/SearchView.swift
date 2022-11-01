@@ -11,34 +11,56 @@ import MapKit
 
 struct SearchView: View {
     @StateObject private var viewModel = PointsViewModel(pointsService: ApplicationConfiguration.shared.pointService)
-    @State private var resultsView: ResultsViewSection = .list
+    @State var showingList: Bool = false
     @State var searchInput: String = ""
     @State var showFilters: Bool = false
     @State var isSearching: Bool = false
     @State var selectedFiters: [PointType] = []
-    
-    enum ResultsViewSection : String, CaseIterable {
-        case list = "List"
-        case map = "Map"
-    }
+    @State var pointToShowViewModel: PointViewModel? = nil
     
     var body: some View {
         VStack {
             NavigationView {
-                VStack(alignment: .leading) {
+                VStack(alignment:.leading) {
                     searchView()
                     if showFilters {
                         filtersView()
                     }
-                    Divider()
-                    segmentedControlView()
                     
-                    if resultsView == .map {
-                        MapView(pointsViewModel: viewModel)//, region: regionForSearchContext(searchContext: viewModel.searchContext))
-                    }
-                    else {
-                        ListView(pointsViewModel: viewModel)
-                    }
+                    ZStack(alignment:.bottomTrailing) {
+                        MapView(pointToShowViewModel: $pointToShowViewModel, pointsViewModel: viewModel)
+                            .zIndex(0)
+                        if showingList {
+                            ListView(pointsViewModel: viewModel, showPointOnMapTapped: { selectedPoint in
+                                withAnimation {
+                                    showingList = false
+                                    pointToShowViewModel = selectedPoint
+                                }
+                            })
+                            .background(Color.white)
+                            .transition(.move(edge: .bottom))
+                            .zIndex(1)
+                        }
+                        
+                        Button {
+                            withAnimation {
+                                showingList.toggle()
+                            }
+                        } label: {
+                            Text(showingList ? "Show Map" : "Show List")
+                                .padding([.leading, .trailing], 18)
+                                .padding([.top, .bottom], 8)
+                                .foregroundColor(.blue)
+                                .background(Color.white)
+                                .cornerRadius(15)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .stroke(.blue, lineWidth: 2)
+                                )
+                        }
+                        .offset(x: -15, y: -15)
+                        .zIndex(2)
+                    }//ends zstack
                 }//ends vstack
             }//ends navigation link
         }//ends vstack
@@ -49,19 +71,29 @@ struct SearchView: View {
     
     fileprivate func searchView() -> some View {
         return VStack {
-            Text("Search Marinas:")
-            TextField( "Enter Marina Name", text: $searchInput)
-            
             HStack {
+                TextField( "Search for marinas", text: $searchInput)
+                //                .overlay(
+                //                    RoundedRectangle(cornerRadius: 15)
+                //                        .stroke(.blue, lineWidth: 2)
+                //                )
+                //
+                
+                Spacer()
+                
                 Button {
                     showFilters.toggle()
                 } label: {
-                    showFilters ? Text("Hide Filter") : Text("Filters")
+                    if showFilters {
+                        Text("Hide Filter")
+                    }
+                    else {
+                        Image(systemName: "line.3.horizontal.decrease")
+                    }
                 }
-                Spacer()
+                .padding(.trailing, 5)
                 if isSearching {
-                    Text("Searching..")
-                        .italic()
+                    Text("Searching..").italic()
                 }
                 else {
                     Button {
@@ -79,7 +111,7 @@ struct SearchView: View {
                             .background(Color.blue)
                             .cornerRadius(10)
                     }//ends search button
-                }
+                }//ends else eg: not actively searching
             }//ends hstack
         }.padding()
     }
@@ -87,7 +119,6 @@ struct SearchView: View {
     fileprivate func filtersView() -> some View{
         return VStack(alignment: .leading, spacing: 10) {
             Text("Filter by location type").bold()
-                
             HStack(spacing: 10) {
                 Button {
                     selectedFiters.removeAll()
@@ -118,22 +149,10 @@ struct SearchView: View {
                     }
                 }
             }//ends foreach
-        }
+        }//ends vstack
         .padding()
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(Color(UIColor.secondarySystemBackground))
-    }
-    
-    fileprivate func segmentedControlView() -> some View {
-        return Picker("", selection: $resultsView) {
-            ForEach(ResultsViewSection.allCases, id: \.self) { option in
-                Text(option.rawValue)
-            }
-        }
-        .pickerStyle(.segmented)
-        .padding(.leading, 10)
-        .padding(.trailing, 10)
-        .padding(.bottom, 0)
     }
     
     func regionForSearchContext(searchContext: SearchContext) -> MKCoordinateRegion {

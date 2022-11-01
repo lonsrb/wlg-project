@@ -10,6 +10,7 @@ import SwiftUI
 
 struct ListView: View {
     @StateObject var pointsViewModel: PointsViewModel
+    let showPointOnMapTapped: (PointViewModel) -> Void
     
     var body: some View {
         ScrollView {
@@ -19,14 +20,16 @@ struct ListView: View {
                         .italic()
                     LazyVStack {
                         ForEach(pointsViewModel.points, id:\.id) { pointViewModel in
-                            PointRowView(pointViewModel: pointViewModel)
-                                .listRowInsets(EdgeInsets())
-                                .id(pointViewModel.id)
+                            PointRowView(pointViewModel: pointViewModel, showOnMapTapped: {
+                                showPointOnMapTapped(pointViewModel)
+                            })
+                            .listRowInsets(EdgeInsets())
+                            .id(pointViewModel.id)
                         }
                     }
                 }.padding(10)
-            }
-        }
-    }
+            }//ends scrollview reader
+        }//ends scrollview
+    }//ends body
 }
-  
+

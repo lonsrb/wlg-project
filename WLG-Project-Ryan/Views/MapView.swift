@@ -10,6 +10,7 @@ import SwiftUI
 import MapKit
 
 struct MapView: View {
+    @Binding var pointToShowViewModel: PointViewModel?
     @StateObject var pointsViewModel: PointsViewModel
     @State var selectedPoint: PointViewModel? = nil
     @State var pointImage: UIImage? = nil
@@ -27,9 +28,16 @@ struct MapView: View {
             .onChange(of: pointsViewModel.searchContext.region ) { newRegion in
                 pointsViewModel.reloadPointsIfNeeded(newRegion: newRegion)
             }
-            
+          
             if selectedPoint != nil {
                 detailsViewForPoint(point: selectedPoint!)
+            }
+        }
+        .onChange(of: pointToShowViewModel) { newValue in
+            print("got a new point to center on: \(newValue?.nameString ?? "Missing")")
+            if let newValue = newValue {
+                selectedPoint = newValue
+                pointsViewModel.centerMapAtPoint(pointViewModel: newValue)
             }
         }
     }
@@ -46,10 +54,9 @@ struct MapView: View {
                     Text("Close")
                 }
             }
-            
-            Text(point.kindString)
             Text(point.latString)
             Text(point.lonString)
+            Text(point.kindString).italic()
             Spacer().frame(height: 10)
             NavigationLink(destination: DetailsView(url: URL(string: point.siteUrl)!)) {
                 Text("Show Details")

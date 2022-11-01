@@ -10,7 +10,12 @@ import Combine
 import UIKit.UIImage
 import CoreLocation
 
-class PointViewModel : ObservableObject, Identifiable {
+class PointViewModel : ObservableObject, Identifiable, Equatable {
+    static func == (lhs: PointViewModel, rhs: PointViewModel) -> Bool {
+        lhs.nameString == rhs.nameString &&
+        lhs.siteUrl == rhs.siteUrl
+    }
+    
     var nameString : String
     var latString : String
     var lonString : String

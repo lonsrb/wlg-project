@@ -9,10 +9,10 @@ import Foundation
 import SwiftUI
 
 struct PointRowView: View {
-    
     var pointViewModel: PointViewModel
     @State var icon: UIImage? = nil
     @State var pointImage: UIImage? = nil
+    let showOnMapTapped: () -> Void
     
     var body: some View {
         ZStack(alignment: .leading) {
@@ -24,17 +24,20 @@ struct PointRowView: View {
                             .frame(width: 20, height: 23)
                     }
                     Text(pointViewModel.nameString)
+                    Spacer()
+                    Button {
+                        showOnMapTapped()
+                    } label: {
+                        Text("Show on map")
+                    }
                 }
                 
                 Text(pointViewModel.latString)
                 Text(pointViewModel.lonString)
-                
-                HStack(alignment: .top) {
-                    Text(pointViewModel.kindString).italic()
-                    Spacer()
-                    NavigationLink(destination: DetailsView(url: URL(string: pointViewModel.siteUrl)!)) {
-                        Text("Show Details")
-                    }
+                Text(pointViewModel.kindString).italic()
+                 
+                NavigationLink(destination: DetailsView(url: URL(string: pointViewModel.siteUrl)!)) {
+                    Text("More Info")
                 }
                 
                 if let pointImage = pointImage {
