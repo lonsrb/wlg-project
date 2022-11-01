@@ -10,21 +10,34 @@ import UIKit.UIImage
 import Combine
 import CoreLocation
 import SwiftDraw
+import MapKit
 
 protocol PointsServiceProtocol {
     var pointsSubject: PassthroughSubject<[Point], Never> { get }
-    func loadPoints(coordinate: CLLocationCoordinate2D) async
-    func loadPointIcon(thumbnailURL : String) async throws -> UIImage?
+    var cachedSearchContext: SearchContext { get }
+    var searchContextSubject: PassthroughSubject<SearchContext, Never> { get }
+    
+    func loadPoints(searchContext: SearchContext) async
+    func loadImage(thumbnailURL : String) async throws -> UIImage?
 }
 
 struct PointsResponse: Codable {
-    let resource: String
     let data: [Point]
 }
 
 class PointsService: PointsServiceProtocol {
-    
     var pointsSubject = PassthroughSubject<[Point], Never>()
+    var searchContextSubject = PassthroughSubject<SearchContext, Never>() {
+        didSet {
+            print("seting new search context")
+            searchContextSubject.send(cachedSearchContext)
+        }
+    }
+    var cachedSearchContext: SearchContext = SearchContext(query: "", selectedFilters: [], region: MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 39.28783449044417, longitude: -76.39857580839772),
+        latitudinalMeters: 750,
+        longitudinalMeters: 750
+    ))
     
     private var currentPoints = [Point]()
     private var networkingService : NetworkingServiceProtocol!
@@ -32,15 +45,27 @@ class PointsService: PointsServiceProtocol {
     init(networkingService : NetworkingServiceProtocol) {
         self.networkingService = networkingService
     }
-        
-    func loadPoints(coordinate: CLLocationCoordinate2D) async {
+    
+    func loadPoints(searchContext: SearchContext) async {
         
         guard let urlComponents = NSURLComponents(string: ApplicationConfiguration.hostUrl + Endpoints.pointsSearch) else {
             assertionFailure("we control the URL, it should make sense and never be nil here")
             return
         }
-        let queryItems = [URLQueryItem(name: "location[lat]", value: String(coordinate.latitude)),
-                          URLQueryItem(name: "location[lon]", value: String(coordinate.longitude))]
+        var queryItems = [URLQueryItem(name: "location[lat]", value: String(searchContext.coordinate.latitude)),
+                          URLQueryItem(name: "location[lon]", value: String(searchContext.coordinate.longitude))]
+        
+        if searchContext.query.count > 0 {
+            let filterQueryItem = URLQueryItem(name: "query", value: searchContext.query)
+            queryItems.append(filterQueryItem)
+        }
+        
+        if searchContext.selectedFilters.count > 0 {
+            let stringArray = searchContext.selectedFilters.map{ $0.rawValue }
+            let stringValue = stringArray.joined(separator: ",")
+            let filterQueryItem = URLQueryItem(name: "kind", value: stringValue)//also tried markers
+            queryItems.append(filterQueryItem)
+        }
         
         urlComponents.queryItems = queryItems
         
@@ -55,19 +80,22 @@ class PointsService: PointsServiceProtocol {
             let (data, _) = try await URLSession.shared.data(for: request)
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = .convertFromSnakeCase
-
+            //            if let JSONString = String(data: data, encoding: String.Encoding.utf8) {
+            //                       print(JSONString)
+            //            }
             let pointsResponse = try decoder.decode(PointsResponse.self, from: data)
             currentPoints = pointsResponse.data
             pointsSubject.send(currentPoints)
+            cachedSearchContext = searchContext
         }
         catch {
             print("there was an error decoding the point results: \(error)")
         }
     }
     
-    //Load the Icon for the point. Use the cache if the image is in there otherwise download.
-    //We're using 3rd parth lib to be able to do `UIImage(svgData: data)`
-    func loadPointIcon(thumbnailURL : String) async throws -> UIImage? {
+    //Load the an Image for a point. Use the cache if the image is in there otherwise download.
+    //We're using 3rd parth lib to be able to do deserialize svgs, eg: `UIImage(svgData: data)`
+    func loadImage(thumbnailURL : String) async throws -> UIImage? {
         
         //used cached image if we can
         if let chachedImage = ImageCache.shared.get(url: thumbnailURL) {
@@ -79,21 +107,30 @@ class PointsService: PointsServiceProtocol {
             throw NetworkingError.invalidUrl(thumbnailURL)
         }
         
-        //download contents of the svg url
+        //download contents of the url
         do {
             let data = try Data(contentsOf:url)
-            if let image = UIImage(svgData: data) {
-                ImageCache.shared.set(url: thumbnailURL, image: image)
-                return image
+            
+            //if the url is for SVG
+            if thumbnailURL.contains(".svg") {
+                if let image = UIImage(svgData: data) {
+                    ImageCache.shared.set(url: thumbnailURL, image: image)
+                    return image
+                }
             }
+            else { //"normal" image
+                if let image = UIImage(data: data) {
+                    ImageCache.shared.set(url: thumbnailURL, image: image)
+                    return image
+                }
+            }
+            
         }
         catch {
-            print("error parsing svg image data: \(error)")
+            print("Error parsing svg image data: \(error)")
         }
         
-        //if we got this far it means somethign failed. Lets just return a placeholder.
-        let configuration = UIImage.SymbolConfiguration(pointSize: 55, weight: .black)
-        let placeHolder = UIImage(systemName: "ellipsis", withConfiguration: configuration)
-        return placeHolder
+        //if we got this far it means somethign failed. Lets just return nil
+        return nil
     }
 }

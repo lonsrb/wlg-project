@@ -17,8 +17,13 @@ struct Point: Codable{
     
     struct Images: Codable {
         var resource: String
-//        var data: [String: String]
+        var data: [Image]
         var totalCount: Int
+        
+        struct Image: Codable {
+            var resource: String
+            var smallUrl: String
+        }
     }
     
     var id: String

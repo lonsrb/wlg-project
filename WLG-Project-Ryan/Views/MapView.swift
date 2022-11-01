@@ -10,27 +10,75 @@ import SwiftUI
 import MapKit
 
 struct MapView: View {
-    @StateObject var pointViewModel: PointsViewModel
-    
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 37.334_900, longitude: -122.009_020),
-        latitudinalMeters: 750,
-        longitudinalMeters: 750
-    )
+    @StateObject var pointsViewModel: PointsViewModel
+    @State var selectedPoint: PointViewModel? = nil
+    @State var pointImage: UIImage? = nil
     
     var body: some View {
-        Map(coordinateRegion: $region)
-            .onAppear{
-                setRegionForCoord(coord: pointViewModel.searchCoordinate)
+        VStack {
+            Map(coordinateRegion: $pointsViewModel.searchContext.region, annotationItems: pointsViewModel.points) {
+                point in
+                MapAnnotation(coordinate: point.coord) {
+                    PointMapView(pointViewModel: point) {
+                        self.selectedPoint = point
+                    }
+                }
             }
+            .onChange(of: pointsViewModel.searchContext.region ) { newRegion in
+                pointsViewModel.reloadPointsIfNeeded(newRegion: newRegion)
+            }
+            
+            if selectedPoint != nil {
+                detailsViewForPoint(point: selectedPoint!)
+            }
+        }
     }
     
-    private func setRegionForCoord(coord: CLLocationCoordinate2D) {
-        region = MKCoordinateRegion(
-            center: pointViewModel.searchCoordinate,
-            latitudinalMeters: 750,
-            longitudinalMeters: 750
+    fileprivate func detailsViewForPoint(point: PointViewModel) -> some View {
+        return VStack(alignment: .leading) {
+            HStack {
+                Text(point.nameString)
+                    .bold()
+                Spacer()
+                Button {
+                    selectedPoint = nil
+                } label: {
+                    Text("Close")
+                }
+            }
+            
+            Text(point.kindString)
+            Text(point.latString)
+            Text(point.lonString)
+            Spacer().frame(height: 10)
+            NavigationLink(destination: DetailsView(url: URL(string: point.siteUrl)!)) {
+                Text("Show Details")
+            }
+            
+            if let selectedPoint = selectedPoint, let pointImage = pointImage {
+                NavigationLink(destination: DetailsView(url: URL(string: selectedPoint.siteUrl)!)) {
+                    Image(uiImage: pointImage)
+                        .resizable()
+                        .scaledToFill()
+                        .border(.black)
+                }
+            }
+        }
+        .padding(13)
+        .frame(
+            maxWidth: .infinity,
+            alignment: .topLeading
         )
+        .onAppear {
+            //load an image if it exists
+            Task {
+                if let selectedPoint = selectedPoint,
+                   let imageUrl = selectedPoint.imageUrl,
+                   let image = await selectedPoint.loadImage(url: imageUrl) {
+                    pointImage = image
+                }
+            }
+        }//ends onAppear
     }
 }
-  
+

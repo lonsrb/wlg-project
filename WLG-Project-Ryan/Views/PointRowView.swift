@@ -11,39 +11,61 @@ import SwiftUI
 struct PointRowView: View {
     
     var pointViewModel: PointViewModel
-    @State var image: UIImage = UIImage(systemName: "ellipsis", withConfiguration: UIImage.SymbolConfiguration(pointSize: 55, weight: .black))!
-    @State var loadedIcon = false
+    @State var icon: UIImage? = nil
+    @State var pointImage: UIImage? = nil
     
     var body: some View {
         ZStack(alignment: .leading) {
             VStack(alignment: .leading) {
-                Text(pointViewModel.nameString)
-                Text(pointViewModel.kindString)
+                HStack {
+                    if let icon = icon {
+                        Image(uiImage: icon)
+                            .resizable()
+                            .frame(width: 20, height: 23)
+                    }
+                    Text(pointViewModel.nameString)
+                }
+                
                 Text(pointViewModel.latString)
                 Text(pointViewModel.lonString)
-                HStack {
-                    if loadedIcon {
-                        Image(uiImage: image)
-                            .resizable()
-                            .frame(width: 50, height: 50)
-                    }
+                
+                HStack(alignment: .top) {
+                    Text(pointViewModel.kindString).italic()
                     Spacer()
                     NavigationLink(destination: DetailsView(url: URL(string: pointViewModel.siteUrl)!)) {
                         Text("Show Details")
                     }
-                    .navigationTitle("Search Results")
                 }
-                .padding(20)
+                
+                if let pointImage = pointImage {
+                    NavigationLink(destination: DetailsView(url: URL(string: pointViewModel.siteUrl)!)) {
+                        Image(uiImage: pointImage)
+                            .resizable()
+                            .scaledToFill()
+                            .border(.black)
+                    }
+                }
                 
                 Divider()
+                    .frame(height: 2)
+                    .overlay(Color(white: 0.9))
             }
             .onAppear {
+                //load the icon
                 Task {
-                    image = await pointViewModel.loadImage()
-                    loadedIcon = true
+                    if let image = await pointViewModel.loadImage(url: pointViewModel.iconUrl)  {
+                        icon = image
+                    }
                 }
-            }
+                
+                //load an image if it exists
+                Task {
+                    if let imageUrl = pointViewModel.imageUrl,
+                       let image = await pointViewModel.loadImage(url: imageUrl) {
+                        pointImage = image
+                    }
+                }
+            }//ends onAppear
         }//ends zstack
-        .padding(10)
     }
 }

@@ -8,17 +8,17 @@
 import Foundation
 import Combine
 import UIKit.UIImage
+import CoreLocation
 
 class PointViewModel : ObservableObject, Identifiable {
     var nameString : String
     var latString : String
     var lonString : String
+    var coord: CLLocationCoordinate2D
     var kindString: String
     var iconUrl: String
     var siteUrl: String
-    
-    @Published var thumbnailImage: UIImage = UIImage(systemName: "ellipsis",
-                                                     withConfiguration: UIImage.SymbolConfiguration(pointSize: 55, weight: .black))!
+    var imageUrl: String?
     
     private(set) var point: Point
     private var pointsService : PointsServiceProtocol!
@@ -29,31 +29,27 @@ class PointViewModel : ObservableObject, Identifiable {
         self.pointsService = pointsService
         
         nameString = point.name
-        latString = "lat: " + String(point.location.lat)
-        lonString = "lon: " + String(point.location.lon)
-        kindString = point.kind.rawValue
+        let location = CLLocation(latitude: point.location.lat, longitude: point.location.lon)
+        
+        latString = "lat: " + location.latitude
+        lonString = "lon: " + location.longitude
+        coord = CLLocationCoordinate2D(latitude: point.location.lat, longitude: point.location.lon)
+        kindString = point.kind.rawValue.capitalized
         iconUrl = point.iconUrl
         siteUrl = point.webUrl
-        //        populateCell()
+        imageUrl = point.images.data.first?.smallUrl
     }
     
-//    func populateCell() {
-//        nameString = point.name
-//        latString = String(point.location.lat)
-//        lonString = String(point.location.lon)
-//        kindString = point.kind.rawValue
-//    }
-    
-    @MainActor func loadImage() async -> UIImage {
+    @MainActor func loadImage(url:String) async -> UIImage? {
         do {
-            if let iconImage = try await pointsService.loadPointIcon(thumbnailURL: point.iconUrl) {
-                thumbnailImage = iconImage
+            if let image = try await pointsService.loadImage(thumbnailURL: url) {
+                return image
             }
         }
         catch {
             //for now do nothing with the error, ideally we'd have
             //analytics to track these internal kinds of errors
         }
-        return self.thumbnailImage
+        return nil
     }
 }
