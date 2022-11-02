@@ -10,14 +10,14 @@ import SwiftUI
 
 struct PointRowView: View {
     var pointViewModel: PointViewModel
-    @State var icon: UIImage? = nil
-    @State var pointImage: UIImage? = nil
+    @State private var icon: UIImage? = nil
+    @State private var pointImage: UIImage? = nil
     let showOnMapTapped: () -> Void
     
     var body: some View {
         ZStack(alignment: .leading) {
             VStack(alignment: .leading) {
-                HStack {
+                HStack(alignment: .top) {
                     if let icon = icon {
                         Image(uiImage: icon)
                             .resizable()

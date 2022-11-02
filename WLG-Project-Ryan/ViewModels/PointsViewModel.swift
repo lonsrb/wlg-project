@@ -46,32 +46,40 @@ class PointsViewModel: ObservableObject  {
             .store(in: &cancellables)
     }
     
-    @MainActor func reloadPointsIfNeeded(newRegion: MKCoordinateRegion){
-        let currentCoord = pointsService.cachedSearchContext.coordinate
-        let currentLocation = CLLocation(latitude: currentCoord.latitude, longitude: currentCoord.longitude)
+    @MainActor func reloadPointsIfNeeded(newRegion: MKCoordinateRegion) {
+        
+        //if no cached region then definily need to load points for this region
+        guard let cachedRegion = pointsService.cachedSearchContext.region else {
+            searchForPoints(region: newRegion,
+                            queryString: pointsService.cachedSearchContext.query,
+                            selectedFilters: pointsService.cachedSearchContext.selectedFilters)
+            return
+        }
+        
+        //calculate the distance between this point and the last one we pulled data for
+        let currentLocation = CLLocation(latitude: cachedRegion.center.latitude,
+                                         longitude: cachedRegion.center.longitude)
         
         let newLocation = CLLocation(latitude: newRegion.center.latitude, longitude: newRegion.center.longitude)
         let distance = currentLocation.distance(from: newLocation)
-        print("---- distance is: \(distance)")
-        if distance > 5000 {//5000 meters, total arbitraty at this point. should eventually be with regard to map window scale
-            searchForPoints(coordinate: newRegion.center, queryString: pointsService.cachedSearchContext.query, selectedFilters: pointsService.cachedSearchContext.selectedFilters)
+        
+        //calculate the current zoom level
+        let westEdgeLocation = CLLocation(latitude: newRegion.center.latitude,
+                                          longitude: newRegion.center.longitude - newRegion.span.longitudeDelta/2)
+        let distanceFromCenterOfMapToEdge = newLocation.distance(from: westEdgeLocation)
+        
+        //cut off to 4 decimal places which is 11.1m of latitude
+        //span is the amount of map shown on screen aka zoom
+        let newSpan = (newRegion.span.latitudeDelta * 10000).rounded() / 10000
+        let currentSpan = (cachedRegion.span.latitudeDelta * 10000).rounded() / 10000
+        let zoomDelta = abs(newSpan - currentSpan)
+        
+        //2 conditions that'd make use ask for new points
+        //    1: the map window moved a certain distance
+        //    2: the map window changed zoom a certain amount
+        if zoomDelta > 0.01 || distance > distanceFromCenterOfMapToEdge { //0.01 is ~1km of distance, kind of arbitrary
+            searchForPoints(region: newRegion, queryString: pointsService.cachedSearchContext.query, selectedFilters: pointsService.cachedSearchContext.selectedFilters)
         }
-        
-       
-//        pointsService.cachedSearchContext.region.center = newRegion.center
-        
-//        bounds | optional
-//        ne
-//        lat
-//        number greater than or equal to -90 and less than or equal to 90
-//        lon
-//        number greater than or equal to -180 and less than or equal to 180
-//        sw
-//        lat
-//        number greater than or equal to -90 and less than or equal to 90
-//        lon
-//        number greater than or equal to -180 and less than or equal to 180
-
     }
     
     func centerMapAtPoint(pointViewModel: PointViewModel) {
@@ -79,13 +87,12 @@ class PointsViewModel: ObservableObject  {
     }
     
     @MainActor
-    func searchForPoints(coordinate: CLLocationCoordinate2D?, queryString: String, selectedFilters: [PointType]) {
+    func searchForPoints(region: MKCoordinateRegion?, queryString: String, selectedFilters: [PointType]) {
         Task {
             isSearching = true
-            let coord = coordinate ?? pointsService.cachedSearchContext.coordinate
             let context = SearchContext(query: queryString,
                                         selectedFilters: selectedFilters,
-                                        region: MKCoordinateRegion(center: coord, latitudinalMeters: 750, longitudinalMeters: 750))
+                                        region: region)
             
             await pointsService.loadPoints(searchContext: context)
             isSearching = false

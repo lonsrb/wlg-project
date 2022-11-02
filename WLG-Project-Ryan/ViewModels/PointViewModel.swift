@@ -24,10 +24,10 @@ class PointViewModel : ObservableObject, Identifiable, Equatable {
     var iconUrl: String
     var siteUrl: String
     var imageUrl: String?
+    @Published var icon: UIImage
     
     private(set) var point: Point
     private var pointsService : PointsServiceProtocol!
-    
     
     init(point : Point, pointsService : PointsServiceProtocol) {
         self.point = point
@@ -43,6 +43,12 @@ class PointViewModel : ObservableObject, Identifiable, Equatable {
         iconUrl = point.iconUrl
         siteUrl = point.webUrl
         imageUrl = point.images.data.first?.smallUrl
+        icon = pointsService.tryLoadImageFromCache(thumbnailURL: iconUrl) ?? UIImage(named: "loading")!
+        Task {
+            if let loadedIcon = await loadImage(url: iconUrl) {
+                Just(loadedIcon).assign(to: &self.$icon)
+            }
+        }
     }
     
     @MainActor func loadImage(url:String) async -> UIImage? {

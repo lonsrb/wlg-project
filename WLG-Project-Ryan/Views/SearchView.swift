@@ -11,12 +11,18 @@ import MapKit
 
 struct SearchView: View {
     @StateObject private var viewModel = PointsViewModel(pointsService: ApplicationConfiguration.shared.pointService)
-    @State var showingList: Bool = false
-    @State var searchInput: String = ""
-    @State var showFilters: Bool = false
-    @State var isSearching: Bool = false
-    @State var selectedFiters: [PointType] = []
-    @State var pointToShowViewModel: PointViewModel? = nil
+    @State private var showingList: Bool = false
+    @State private var searchInput: String = ""
+    @State private var showFilters: Bool = false
+    @State private var isSearching: Bool = false
+    @State private var selectedFiters: [PointType] = []
+    @State private var pointToShowViewModel: PointViewModel? = nil
+    @State private var resultsView: ResultsViewSelection = .list
+    
+    enum ResultsViewSelection : String, CaseIterable {
+        case list = "List"
+        case map = "Map"
+    }
     
     var body: some View {
         VStack {
@@ -26,61 +32,68 @@ struct SearchView: View {
                     if showFilters {
                         filtersView()
                     }
+                    segmentedControlView()
                     
-                    ZStack(alignment:.bottomTrailing) {
-                        MapView(pointToShowViewModel: $pointToShowViewModel, pointsViewModel: viewModel)
-                            .zIndex(0)
-                        if showingList {
-                            ListView(pointsViewModel: viewModel, showPointOnMapTapped: { selectedPoint in
-                                withAnimation {
-                                    showingList = false
-                                    pointToShowViewModel = selectedPoint
-                                }
-                            })
-                            .background(Color.white)
-                            .transition(.move(edge: .bottom))
-                            .zIndex(1)
-                        }
-                        
-                        Button {
-                            withAnimation {
-                                showingList.toggle()
-                            }
-                        } label: {
-                            Text(showingList ? "Show Map" : "Show List")
-                                .padding([.leading, .trailing], 18)
-                                .padding([.top, .bottom], 8)
-                                .foregroundColor(.blue)
-                                .background(Color.white)
-                                .cornerRadius(15)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 15)
-                                        .stroke(.blue, lineWidth: 2)
-                                )
-                        }
-                        .offset(x: -15, y: -15)
-                        .zIndex(2)
-                    }//ends zstack
+                    if resultsView == .list {
+                        ListView(pointsViewModel: viewModel, showPointOnMapTapped: { selectedPoint in
+                            pointToShowViewModel = selectedPoint
+                            resultsView = .map
+                        })
+                    }
+                    else {// resultsView == .map
+                        mapView()
+                    }
                 }//ends vstack
             }//ends navigation link
         }//ends vstack
-        .onAppear{
-            viewModel.searchForPoints(coordinate: viewModel.searchContext.coordinate, queryString: "", selectedFilters: [])
-        }
+    }
+    
+    fileprivate func mapView() -> some View {
+        ZStack(alignment:.bottomTrailing) {
+            MapView(pointToShowViewModel: $pointToShowViewModel,
+                    pointsViewModel: viewModel,
+                    displayedRegion: regionForMap())
+                .zIndex(0)
+            
+            if showingList {
+                ListView(pointsViewModel: viewModel, showPointOnMapTapped: { selectedPoint in
+                    withAnimation {
+                        showingList = false
+                        pointToShowViewModel = selectedPoint
+                    }
+                })
+                .background(Color.white)
+                .transition(.move(edge: .bottom))
+                .zIndex(1)
+            }
+            
+            Button {
+                withAnimation {
+                    showingList.toggle()
+                }
+            } label: {
+                Text(showingList ? "Show Map" : "Show List")
+                    .padding([.leading, .trailing], 18)
+                    .padding([.top, .bottom], 8)
+                    .foregroundColor(.blue)
+                    .background(Color.white)
+                    .cornerRadius(15)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 15)
+                            .stroke(.blue, lineWidth: 2)
+                    )
+            }
+            .offset(x: -15, y: -15)
+            .zIndex(2)
+        }//ends zstack
     }
     
     fileprivate func searchView() -> some View {
+        UITextField.appearance().clearButtonMode = .whileEditing
         return VStack {
             HStack {
                 TextField( "Search for marinas", text: $searchInput)
-                //                .overlay(
-                //                    RoundedRectangle(cornerRadius: 15)
-                //                        .stroke(.blue, lineWidth: 2)
-                //                )
-                //
-                
                 Spacer()
-                
                 Button {
                     showFilters.toggle()
                 } label: {
@@ -92,6 +105,7 @@ struct SearchView: View {
                     }
                 }
                 .padding(.trailing, 5)
+                
                 if isSearching {
                     Text("Searching..").italic()
                 }
@@ -99,8 +113,7 @@ struct SearchView: View {
                     Button {
                         showFilters = false
                         isSearching = viewModel.isSearching
-                        //call search on VM
-                        viewModel.searchForPoints(coordinate: nil,//would use this once we add a locaiton button
+                        viewModel.searchForPoints(region: resultsView == .list ? nil : viewModel.searchContext.region,
                                                   queryString: searchInput,
                                                   selectedFilters: selectedFiters)
                     } label: {
@@ -155,11 +168,34 @@ struct SearchView: View {
         .background(Color(UIColor.secondarySystemBackground))
     }
     
-    func regionForSearchContext(searchContext: SearchContext) -> MKCoordinateRegion {
-        return MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 37.334_900, longitude: -122.009_020),
-            latitudinalMeters: 750,
-            longitudinalMeters: 750
-        )
+    fileprivate func segmentedControlView() -> some View {
+        return Picker("", selection: $resultsView) {
+            ForEach(ResultsViewSelection.allCases, id: \.self) { option in
+                Text(option.rawValue)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.leading, 10)
+        .padding(.trailing, 10)
+        .padding(.bottom, 0)
+    }
+    
+    
+    fileprivate func regionForMap() -> MKCoordinateRegion {
+        if let pointToShowViewModel = pointToShowViewModel {
+            return MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: pointToShowViewModel.coord.latitude,
+                                               longitude: pointToShowViewModel.coord.longitude),
+                latitudinalMeters: 2000,
+                longitudinalMeters: 2000
+            )
+        }
+        else { //just us a default location for the map
+            return MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: 39.28783449044417, longitude: -76.39857580839772),
+                latitudinalMeters: 2000,
+                longitudinalMeters: 2000
+            )
+        }
     }
 }

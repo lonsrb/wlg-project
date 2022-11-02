@@ -12,32 +12,42 @@ import MapKit
 struct MapView: View {
     @Binding var pointToShowViewModel: PointViewModel?
     @StateObject var pointsViewModel: PointsViewModel
-    @State var selectedPoint: PointViewModel? = nil
-    @State var pointImage: UIImage? = nil
+    @State private var selectedPoint: PointViewModel? = nil
+    @State private var pointImage: UIImage? = nil
+    @State var displayedRegion: MKCoordinateRegion
     
     var body: some View {
         VStack {
-            Map(coordinateRegion: $pointsViewModel.searchContext.region, annotationItems: pointsViewModel.points) {
+            Map(coordinateRegion: $displayedRegion, annotationItems: pointsViewModel.points) {
                 point in
                 MapAnnotation(coordinate: point.coord) {
-                    PointMapView(pointViewModel: point) {
-                        self.selectedPoint = point
+                    VStack {
+                        Button {
+                            pointImage = nil
+                            selectedPoint = point
+                        } label: {
+                            Image(uiImage: point.icon)
+                                .resizable()
+                                .frame(width: 26, height: 30)
+                                .offset(y: -15)
+                        }//ends label
                     }
+                    .frame(width: 40, height: 40)
                 }
             }
-            .onChange(of: pointsViewModel.searchContext.region ) { newRegion in
+            .onChange(of: displayedRegion ) { newRegion in
                 pointsViewModel.reloadPointsIfNeeded(newRegion: newRegion)
             }
-          
-            if selectedPoint != nil {
-                detailsViewForPoint(point: selectedPoint!)
+            
+            if let selectedPoint = selectedPoint {
+                detailsViewForPoint(point: selectedPoint)
             }
         }
         .onChange(of: pointToShowViewModel) { newValue in
-            print("got a new point to center on: \(newValue?.nameString ?? "Missing")")
             if let newValue = newValue {
                 selectedPoint = newValue
                 pointsViewModel.centerMapAtPoint(pointViewModel: newValue)
+                displayedRegion.center = newValue.coord
             }
         }
     }
@@ -76,16 +86,25 @@ struct MapView: View {
             maxWidth: .infinity,
             alignment: .topLeading
         )
+        .onChange(of: point.imageUrl) { newUrl in
+            loadImage()
+        }
         .onAppear {
-            //load an image if it exists
-            Task {
-                if let selectedPoint = selectedPoint,
-                   let imageUrl = selectedPoint.imageUrl,
-                   let image = await selectedPoint.loadImage(url: imageUrl) {
-                    pointImage = image
-                }
-            }
+            loadImage()
         }//ends onAppear
+    }
+    
+    fileprivate func loadImage() {
+        Task {
+            if let selectedPoint = selectedPoint,
+               let imageUrl = selectedPoint.imageUrl,
+               let image = await selectedPoint.loadImage(url: imageUrl) {
+                pointImage = image
+            }
+            else {
+                pointImage = nil
+            }
+        }
     }
 }
 

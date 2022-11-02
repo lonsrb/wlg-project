@@ -12,9 +12,13 @@ private var _shared : ImageCache!
 
 class ImageCache {
     var cache = NSCache<NSString, UIImage>()
+    private let lock = NSLock()
     
     func get(url: String) -> UIImage? {
-        return cache.object(forKey: NSString(string: url))
+        lock.lock()
+        let image = cache.object(forKey: NSString(string: url))
+        lock.unlock()
+        return image
     }
     
     func set(url: String, image: UIImage) {
